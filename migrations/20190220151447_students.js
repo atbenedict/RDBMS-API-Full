@@ -17,5 +17,5 @@ exports.up = function(knex, Promise) {
 
 // how can I undo the changes
 exports.down = function(knex, Promise) {
-  return knex.schema.dropTableIfExists("users");
+  return knex.schema.dropTableIfExists("student");
 };

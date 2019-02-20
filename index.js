@@ -5,7 +5,7 @@ const knex = require("knex");
 const knexConfig = {
   client: "sqlite3",
   connection: {
-    filename: "./data/lambda.sqlite3"
+    filename: "./db/lambda.sqlite3"
   },
   useNullAsDefault: true
 };
@@ -33,10 +33,26 @@ const errors = {
 // list a cohort by id
 server.get("/api/cohorts/:id", async (req, res) => {
   try {
-    const cohort = await db("cohorts")
-      .where({ id: req.params.id })
-      .first();
-    res.status(200).json(cohort);
+    const cohort = await db("cohorts").where({ id: req.params.id });
+    if (cohort === null) {
+      res.status(404).json({ message: "There is no cohort by that ID" });
+    } else {
+      res.status(200).json(cohort);
+    }
+  } catch (error) {
+    res.status(500).json(error);
+  }
+});
+
+// list the students in a cohort
+server.get("/api/cohorts/:id/students", async (req, res) => {
+  try {
+    const students = await db("student").where({ cohort_id: req.params.id });
+    if (students === null) {
+      res.status(404).json({ message: "No students found in that cohort" });
+    } else {
+      res.status(200).json(students);
+    }
   } catch (error) {
     res.status(500).json(error);
   }
@@ -95,7 +111,7 @@ server.delete("/api/cohorts/:id", async (req, res) => {
 // list all students
 server.get("/api/students", async (req, res) => {
   try {
-    const students = await db("students");
+    const students = await db("student");
     res.status(200).json(students);
   } catch (error) {
     res.status(500).json(error);
@@ -105,10 +121,13 @@ server.get("/api/students", async (req, res) => {
 // list a student by id
 server.get("/api/students/:id", async (req, res) => {
   try {
-    const student = await db("students")
+    const student = await db("student")
       .where({ id: req.params.id })
       .first();
-    res.status(200).json(student);
+    const cohort = await db("cohorts")
+      .where(id, student.cohort_id)
+      .first();
+    res.status(200).json(cohort);
   } catch (error) {
     res.status(500).json(error);
   }
@@ -117,9 +136,9 @@ server.get("/api/students/:id", async (req, res) => {
 // create a student
 server.post("/api/students", async (req, res) => {
   try {
-    const [id] = await db("students").insert(req.body);
+    const [id] = await db("student").insert(req.body);
 
-    const student = await db("students")
+    const student = await db("student")
       .where({ id })
       .first();
 
@@ -133,12 +152,12 @@ server.post("/api/students", async (req, res) => {
 // update a student
 server.put("/api/students/:id", async (req, res) => {
   try {
-    const count = await db("students")
+    const count = await db("student")
       .where({ id: req.params.id })
       .update(req.body);
 
     if (count > 0) {
-      const student = await db("students")
+      const student = await db("student")
         .where({ id: req.params.id })
         .first();
 
